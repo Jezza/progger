@@ -2,7 +2,7 @@
 
 Nothing too crazy.
 
-Just a bunch of small utilities that I kept on bring from one language project to another.
+Just a bunch of small utilities that I kept on bringing from one language project to another.
 
 ## Parser
 
