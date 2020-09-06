@@ -8,8 +8,7 @@ Just a bunch of small utilities that I kept on bringing from one language projec
 
 It contains a simple Parser base.
 
-Using is a simple as:
-
+It handles things like peeking and span wrapping.
 
 ```rust
 progger::new_parser! {
