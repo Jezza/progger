@@ -1,31 +1,36 @@
 #[macro_export]
 macro_rules! new_parser {
 (
-	ctx = $ctx_lifetime:lifetime;
 	Context = $ctx:path;
 	TokenKind = $token_kind:path;
 	Span = $span:path;
 ) => {
 		pub type Token = ::progger::parser::Token<$token_kind, $span>;
 
-		type Inner<$ctx_lifetime> = ::progger::parser::Parser<$ctx_lifetime, $ctx, $token_kind, $span>;
+		type Inner = ::progger::parser::Parser<$ctx, $token_kind, $span>;
 
-		pub fn new<$ctx_lifetime>(ctx: &$ctx_lifetime mut $ctx, name: &str, input: &str) -> Parser<$ctx_lifetime> {
-			let inner = ::progger::parser::Parser::<$ctx_lifetime, $ctx, $token_kind, $span>::new(ctx, name, input);
+		pub fn new(ctx: $ctx, input: &str) -> Parser<> {
+			let inner = ::progger::parser::Parser::<$ctx, $token_kind, $span>::new(ctx, input);
 			Parser(inner)
 		}
 
-		pub struct Parser<$ctx_lifetime>(Inner<$ctx_lifetime>);
+		pub struct Parser(Inner);
 
-		impl<$ctx_lifetime> ::std::ops::Deref for Parser<$ctx_lifetime> {
-			type Target = Inner<$ctx_lifetime>;
+		impl Parser {
+			pub fn into_ctx(self) -> $ctx {
+				self.0.into_ctx()
+			}
+		}
+
+		impl ::std::ops::Deref for Parser {
+			type Target = Inner;
 
 			fn deref(&self) -> &Self::Target {
 				&self.0
 			}
 		}
 
-		impl<$ctx_lifetime> ::std::ops::DerefMut for Parser<$ctx_lifetime> {
+		impl ::std::ops::DerefMut for Parser {
 			fn deref_mut(&mut self) -> &mut Self::Target {
 				&mut self.0
 			}
@@ -36,16 +41,14 @@ macro_rules! new_parser {
 
 pub type Token<T, S> = (T, S);
 
-pub struct Parser<'ctx, Ctx, TokenKind, Span> {
-	pub ctx: &'ctx mut Ctx,
-	name: String,
-	input: String,
+pub struct Parser<Ctx, TokenKind, Span> {
+	pub ctx: Ctx,
 	tokens: Vec<Token<TokenKind, Span>>,
 	index: usize,
 }
 
-impl<'ctx, Ctx: 'ctx, Tok, Span: crate::Span> Parser<'ctx, Ctx, Tok, Span> {
-	pub fn new<'source, TokenKind>(ctx: &'ctx mut Ctx, name: &str, input: &'source str) -> Parser<'ctx, Ctx, TokenKind, Span>
+impl<Ctx, Tok, Span: crate::Span> Parser<Ctx, Tok, Span> {
+	pub fn new<'source, TokenKind>(ctx: Ctx, input: &'source str) -> Parser<Ctx, TokenKind, Span>
 		where TokenKind: logos::Logos<'source, Source = str>
 	{
 		let tokens: Vec<Token<TokenKind, Span>> = TokenKind::lexer(input)
@@ -64,33 +67,35 @@ impl<'ctx, Ctx: 'ctx, Tok, Span: crate::Span> Parser<'ctx, Ctx, Tok, Span> {
 
 		Parser {
 			ctx,
-			name: name.into(),
-			input: input.into(),
 			tokens,
 			index: 0,
 		}
 	}
 }
 
-impl<'ctx, Ctx: 'ctx, TokenKind, Span> Parser<'ctx, Ctx, TokenKind, Span> {
-	fn name(&self) -> &str {
-		&self.name
-	}
+impl<Ctx, TokenKind, Span> Parser<Ctx, TokenKind, Span> {
+	pub fn into_ctx(self) -> Ctx {
+		let Parser {
+			ctx,
+			..
+		} = self;
 
-	fn input(&self) -> &str {
-		&self.input
+		ctx
 	}
 }
 
+impl<Ctx, TokenKind: Copy + Clone + PartialEq, Span: Copy + Clone> Iterator for Parser<Ctx, TokenKind, Span> {
+	type Item = Token<TokenKind, Span>;
 
-impl<'ctx, Ctx: 'ctx, TokenKind: Copy + Clone + PartialEq, Span: Copy + Clone> Parser<'ctx, Ctx, TokenKind, Span> {
-	fn next(&mut self) -> Option<Token<TokenKind, Span>> {
+	fn next(&mut self) -> Option<Self::Item> {
 		let index = self.index;
 		let token = self.tokens.get(index).cloned();
 		self.index = index + 1;
 		token
 	}
+}
 
+impl<Ctx, TokenKind: Copy + Clone + PartialEq, Span: Copy + Clone> Parser<Ctx, TokenKind, Span> {
 	pub fn peek_token(&mut self) -> Option<Token<TokenKind, Span>> {
 		self.tokens.get(self.index)
 			.cloned()

@@ -21,8 +21,14 @@ mod arena {
 	impl<T> Copy for ArenaId<T> {}
 
 	pub struct Arena<'arena, T: 'arena> {
-		bump: Box<Bump>,
+		_bump: Box<Bump>,
 		arena: BumpVec<'arena, T>,
+	}
+
+	impl<'a, T: 'a> Default for Arena<'a, T> {
+		fn default() -> Self {
+			Self::new()
+		}
 	}
 
 	impl<'a, T: 'a> Arena<'a, T> {
@@ -37,7 +43,7 @@ mod arena {
 			let arena = BumpVec::new_in(arena_ref);
 
 			Arena {
-				bump,
+				_bump: bump,
 				arena,
 			}
 		}
@@ -76,6 +82,12 @@ mod interner {
 	pub struct Interner<T> {
 		spans: Vec<T>,
 		arena: String,
+	}
+
+	impl<T> Default for Interner<T> {
+		fn default() -> Self {
+			Self::new()
+		}
 	}
 
 	impl<T> Interner<T> {
