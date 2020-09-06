@@ -95,7 +95,11 @@ fn main() {
 
     let ctx = Context::new(file_name);
 
-    parser::new(ctx, content);
+    let mut parser = parser::new(ctx, content);
+
+    if parser.is(TokenKind::Value) {
+        panic!("Yay!");
+    }
 }
 ```
 
