@@ -36,6 +36,23 @@ macro_rules! new_parser {
 			}
 		}
 
+		impl Parser {
+			pub fn peek<P: Parse>(&mut self) -> Option<P> {
+				let mark = Inner::mark(self);
+
+				match P::parse(self) {
+					Some(value) => Some(value),
+					None => {
+						Inner::reset(self, mark);
+						None
+					}
+				}
+			}
+		}
+
+		pub trait Parse: Sized {
+			fn parse(parser: &mut Parser) -> Option<Self>;
+		}
 	};
 }
 
@@ -43,7 +60,7 @@ pub type Token<T, S> = (T, S);
 
 pub struct Parser<Ctx, TokenKind, Span> {
 	pub ctx: Ctx,
-	tokens: Vec<Token<TokenKind, Span>>,
+	tokens: Box<[Token<TokenKind, Span>]>,
 	index: usize,
 }
 
@@ -51,7 +68,7 @@ impl<Ctx, Tok, Span: crate::Span> Parser<Ctx, Tok, Span> {
 	pub fn new<'source, TokenKind>(ctx: Ctx, input: &'source str) -> Parser<Ctx, TokenKind, Span>
 		where TokenKind: logos::Logos<'source, Source = str>
 	{
-		let tokens: Vec<Token<TokenKind, Span>> = TokenKind::lexer(input)
+		let tokens = TokenKind::lexer(input)
 			.spanned()
 			.map(|(kind, span)| {
 				let logos::Span {
@@ -62,8 +79,6 @@ impl<Ctx, Tok, Span: crate::Span> Parser<Ctx, Tok, Span> {
 				(kind, Span::new_raw(start, end))
 			})
 			.collect();
-
-		// println!("{:#?}", tokens);
 
 		Parser {
 			ctx,
@@ -145,4 +160,18 @@ impl<Ctx, TokenKind: Copy + Clone + PartialEq, Span: Copy + Clone> Parser<Ctx, T
 			Err(Some(token))
 		}
 	}
+
+	pub fn mark(parser: &mut Self) -> usize {
+		parser.index
+	}
+
+	pub fn reset(parser: &mut Self, index: usize) {
+		parser.index = index
+	}
 }
+
+// trait Parse<Ctx, TokenKind, Span> {
+// 	type Output: Sized;
+//
+// 	fn parse(parser: &mut Parser<Ctx, TokenKind, Span>) -> Self::Output;
+// }

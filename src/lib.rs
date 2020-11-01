@@ -7,6 +7,3 @@ pub trait Span {
 
 	fn range(&self) -> std::ops::Range<usize>;
 }
-
-
-

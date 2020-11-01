@@ -15,10 +15,24 @@ impl Debug for Span {
 
 impl Span {
 	pub fn new_raw(start: usize, end: usize) -> Self {
+		assert!(start <= end);
+
 		Span {
 			start,
 			end,
 		}
+	}
+
+	pub fn len(&self) -> usize {
+		self.end - self.start
+	}
+
+	pub fn start(&self) -> usize {
+		self.start
+	}
+
+	pub fn end(&self) -> usize {
+		self.end
 	}
 
 	pub fn range(&self) -> Range<usize> {

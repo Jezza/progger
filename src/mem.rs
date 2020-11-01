@@ -4,6 +4,7 @@ pub use interner::Interner;
 pub use interner::InternId;
 
 mod arena {
+	use std::fmt::Formatter;
 	use std::marker::PhantomData;
 
 	use bumpalo::Bump;
@@ -19,6 +20,12 @@ mod arena {
 	}
 
 	impl<T> Copy for ArenaId<T> {}
+
+	impl<T> std::fmt::Debug for ArenaId<T> {
+		fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+			write!(f, "ArenaId({})", self.0)
+		}
+	}
 
 	pub struct Arena<'arena, T: 'arena> {
 		_bump: Box<Bump>,
